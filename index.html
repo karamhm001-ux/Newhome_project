@@ -1,14 +1,78 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hello World</title>
-  <link href='/style.css' rel='stylesheet'>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>천안아산 보금자리 매니저</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <h1>Hello, world!</h1>
-  <button onclick="console.log('hello');">Press me</button>
-  <script defer type="text/javascript" src="/main.js"></script>
+    <header class="main-header">
+        <div class="container">
+            <h1>천안아산 보금자리 매니저</h1>
+            <p>신혼부부를 위한 미래 가치 기반 맞춤형 아파트 추천</p>
+        </div>
+    </header>
+
+    <main class="container main-content">
+        <!-- Asset Input Section -->
+        <section class="card glass budget-planner">
+            <h2>💰 나의 자산 계획</h2>
+            <div class="input-grid">
+                <div class="input-group">
+                    <label for="cash">현재 가용 자산 (만원)</label>
+                    <input type="number" id="cash" placeholder="예: 15000" min="0">
+                </div>
+                <div class="input-group">
+                    <label for="monthly-savings">월 목표 저축액 (만원)</label>
+                    <input type="number" id="monthly-savings" placeholder="예: 200" min="0">
+                </div>
+                <div class="input-group">
+                    <label for="loan-limit">희망 대출액 (만원)</label>
+                    <input type="number" id="loan-limit" placeholder="예: 30000" min="0">
+                </div>
+            </div>
+            <div class="summary-box" id="budget-summary">
+                내 집 마련 가능한 총 예산: <span id="total-budget">0</span> 만원
+            </div>
+        </section>
+
+        <!-- Smart Filter Section -->
+        <section class="card glass smart-filter">
+            <h2>🎯 맞춤 필터</h2>
+            <div class="filter-group">
+                <label>교육 인프라 우선순위</label>
+                <div class="chip-container" id="edu-chips">
+                    <button class="chip active" data-value="all">전체</button>
+                    <button class="chip" data-value="kinder">유치원 인접</button>
+                    <button class="chip" data-value="elementary">초품아</button>
+                    <button class="chip" data-value="academy">학원가 인접</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Result Section -->
+        <section class="result-section">
+            <div class="section-header">
+                <h2>🏠 추천 보금자리</h2>
+                <span class="sort-info">미래 가치 점수순</span>
+            </div>
+            <div id="apartment-list" class="apartment-grid">
+                <!-- Apartment cards will be injected here by JS -->
+                <div class="loader">데이터를 불러오는 중...</div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        <div class="container">
+            <p>&copy; 2026 Cheonan-Asan Sweet Home Manager. 모든 정보는 분석 목적으로만 제공됩니다.</p>
+        </div>
+    </footer>
+
+    <script type="module" src="main.js"></script>
 </body>
 </html>
