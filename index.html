@@ -75,6 +75,33 @@
         </div>
     </footer>
 
+    <!-- Chatbot UI -->
+    <div id="chatbot-container" class="chatbot-hidden">
+        <div class="chatbot-window glass">
+            <div class="chatbot-header">
+                <h3>🏠 AI 보금자리 매니저</h3>
+                <button id="close-chat">&times;</button>
+            </div>
+            <div id="chat-messages" class="chat-messages">
+                <div class="message bot">안녕하세요! 천안/아산 지역 집 마련에 대해 궁금한 점을 물어보세요.</div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="질문을 입력하세요...">
+                <button id="send-chat">전송</button>
+            </div>
+        </div>
+    </div>
+    <button id="chatbot-toggle" class="chatbot-btn">
+        <span>💬</span>
+    </button>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "@google/generative-ai": "https://esm.run/@google/generative-ai"
+        }
+      }
+    </script>
     <script type="module" src="main.js"></script>
 </body>
 </html>

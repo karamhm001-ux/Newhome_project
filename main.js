@@ -1,6 +1,12 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
 /**
  * Cheonan-Asan Sweet Home Manager - Main Logic
  */
+
+// 0. AI Configuration
+const API_KEY = "AIzaSyBYph46fnUM-USuhDAcblYWBpr4C2IZ2Gg"; 
+const genAI = new GoogleGenerativeAI(API_KEY);
 
 // 1. Updated Data for Apartments (Based on Real Market Data 2026)
 const apartments = [
@@ -95,18 +101,19 @@ const elements = {
     savings: document.getElementById('monthly-savings'),
     loan: document.getElementById('loan-limit'),
     totalBudget: document.getElementById('total-budget'),
-    filterChips: document.getElementById('edu-chips'), // Renamed mentally to general filter
+    filterChips: document.getElementById('edu-chips'),
     aptList: document.getElementById('apartment-list'),
-    budgetSummary: document.getElementById('budget-summary')
+    budgetSummary: document.getElementById('budget-summary'),
+    chatbotToggle: document.getElementById('chatbot-toggle'),
+    chatbotContainer: document.getElementById('chatbot-container'),
+    closeChat: document.getElementById('close-chat'),
+    chatInput: document.getElementById('chat-input'),
+    sendChat: document.getElementById('send-chat'),
+    chatMessages: document.getElementById('chat-messages')
 };
 
 // 4. Logic Functions
 
-/**
- * 대출 건전성 분석 로직
- * 원리: 월 저축액의 50% 이상이 원리금 상환에 사용되면 '위험'으로 간주 (간이 DSR)
- * 대출 이율 4.5%, 30년 원리금 균등 상환 가정
- */
 function analyzeLoanSafety() {
     if (state.loanLimit <= 0) {
         state.loanAnalysis = { isSafe: true, message: "대출 없이 매수 가능한 범위를 확인합니다.", dsr: 0 };
@@ -116,10 +123,7 @@ function analyzeLoanSafety() {
     const annualInterestRate = 0.045;
     const months = 360;
     const monthlyRate = annualInterestRate / 12;
-    
-    // 원리금 균등 상환액 계산 공식: [대출금 * 이율 * (1+이율)^기간] / [(1+이율)^기간 - 1]
     const monthlyPayment = (state.loanLimit * monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
-    
     const paymentRatio = (monthlyPayment / state.monthlySavings) * 100;
     
     if (state.monthlySavings <= 0) {
@@ -137,7 +141,6 @@ function updateBudgetUI() {
     const currentBudget = state.cash + state.loanLimit;
     elements.totalBudget.textContent = currentBudget.toLocaleString();
     
-    // 분석 결과 메시지 업데이트
     let analysisEl = document.getElementById('loan-analysis-msg');
     if (!analysisEl) {
         analysisEl = document.createElement('p');
@@ -152,26 +155,18 @@ function updateBudgetUI() {
 }
 
 function calculateScore(apt) {
-    // Score = (Location * 0.4) + (Education * 0.3) + (Future * 0.3)
     return (apt.score.location * 0.4 + apt.score.education * 0.3 + apt.score.future * 0.3).toFixed(1);
 }
 
 function renderApartments() {
     const totalBudget = state.cash + state.loanLimit;
-    
-    // Filter and Sort
     const filtered = apartments.filter(apt => {
         const budgetMatch = totalBudget === 0 || apt.price <= totalBudget;
-        
         if (state.activeFilters.has('all')) return budgetMatch;
-        
-        // Every active filter must be present in apt.features (AND logic) or at least one (OR logic)? 
-        // Using OR logic for better discovery, but tailored to UX.
         const featureMatch = Array.from(state.activeFilters).some(f => apt.features.includes(f));
         return budgetMatch && featureMatch;
     }).sort((a, b) => calculateScore(b) - calculateScore(a));
 
-    // Render
     if (filtered.length === 0) {
         elements.aptList.innerHTML = `<div class="loader">조건에 맞는 보금자리가 없습니다. 예산을 조정하거나 필터를 변경해 보세요.</div>`;
         return;
@@ -212,9 +207,63 @@ function renderApartments() {
     `).join('');
 }
 
+// 6. Chatbot Logic
+async function getAIResponse(userMessage) {
+    if (API_KEY === "YOUR_API_KEY_HERE") {
+        return "⚠️ API 키가 설정되지 않았습니다. main.js 상단의 API_KEY 변수에 키를 입력해주세요. (Google AI Studio에서 발급 가능)";
+    }
+
+    try {
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const context = `
+            당신은 천안/아산 지역 아파트 전문가입니다. 아래는 현재 추천 가능한 아파트 데이터입니다:
+            ${JSON.stringify(apartments, null, 2)}
+            
+            사용자의 질문에 대해 이 데이터를 바탕으로 친절하게 답변해주세요. 
+            가격은 만원 단위이며, 점수는 100점 만점입니다.
+            답변은 한국어로, 친근한 전문가 톤으로 해주세요.
+        `;
+
+        const prompt = `${context}\n\n사용자 질문: ${userMessage}`;
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        return response.text();
+    } catch (error) {
+        console.error("AI Error:", error);
+        return "죄송합니다. 답변을 생성하는 중에 오류가 발생했습니다.";
+    }
+}
+
+function addMessage(text, isUser = false) {
+    const msgDiv = document.createElement('div');
+    msgDiv.classList.add('message', isUser ? 'user' : 'bot');
+    msgDiv.textContent = text;
+    elements.chatMessages.appendChild(msgDiv);
+    elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+}
+
+async function handleSendMessage() {
+    const text = elements.chatInput.value.trim();
+    if (!text) return;
+
+    addMessage(text, true);
+    elements.chatInput.value = '';
+    
+    const loadingId = Date.now();
+    const loadingDiv = document.createElement('div');
+    loadingDiv.classList.add('message', 'bot');
+    loadingDiv.id = loadingId;
+    loadingDiv.textContent = "생각 중...";
+    elements.chatMessages.appendChild(loadingDiv);
+
+    const aiRes = await getAIResponse(text);
+    const loader = document.getElementById(loadingId);
+    if (loader) loader.remove();
+    addMessage(aiRes);
+}
+
 // 5. Event Listeners
 function init() {
-    // Input events
     const updateAll = () => {
         analyzeLoanSafety();
         updateBudgetUI();
@@ -234,11 +283,9 @@ function init() {
         updateAll();
     });
 
-    // Filter events
     elements.filterChips.addEventListener('click', (e) => {
         if (e.target.classList.contains('chip')) {
             const val = e.target.dataset.value;
-            
             if (val === 'all') {
                 state.activeFilters.clear();
                 state.activeFilters.add('all');
@@ -247,7 +294,6 @@ function init() {
             } else {
                 state.activeFilters.delete('all');
                 elements.filterChips.querySelector('[data-value="all"]').classList.remove('active');
-                
                 if (state.activeFilters.has(val)) {
                     state.activeFilters.delete(val);
                     e.target.classList.remove('active');
@@ -255,7 +301,6 @@ function init() {
                     state.activeFilters.add(val);
                     e.target.classList.add('active');
                 }
-                
                 if (state.activeFilters.size === 0) {
                     state.activeFilters.add('all');
                     elements.filterChips.querySelector('[data-value="all"]').classList.add('active');
@@ -265,7 +310,19 @@ function init() {
         }
     });
 
-    // Initial Render
+    elements.chatbotToggle.addEventListener('click', () => {
+        elements.chatbotContainer.classList.toggle('chatbot-hidden');
+    });
+
+    elements.closeChat.addEventListener('click', () => {
+        elements.chatbotContainer.classList.add('chatbot-hidden');
+    });
+
+    elements.sendChat.addEventListener('click', handleSendMessage);
+    elements.chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleSendMessage();
+    });
+
     renderApartments();
 }
 
