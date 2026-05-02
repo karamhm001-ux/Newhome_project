@@ -95,10 +95,16 @@
         <span>💬</span>
     </button>
 
+    <script>
+      // This is a placeholder for environment variable injection
+      // In a real hosting environment (like Firebase Hosting or IDX), 
+      // these values are often injected at build or runtime.
+      window.ENV_API_KEY = "AIzaSyBYph46fnUM-USuhDAcblYWBpr4C2IZ2Gg"; // Still hardcoded for preview, but logic is ready for .env
+    </script>
     <script type="importmap">
       {
         "imports": {
-          "@google/generative-ai": "https://esm.run/@google/generative-ai"
+          "@google/genai": "https://esm.run/@google/genai"
         }
       }
     </script>

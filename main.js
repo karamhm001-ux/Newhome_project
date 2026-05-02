@@ -1,12 +1,13 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 /**
  * Cheonan-Asan Sweet Home Manager - Main Logic
  */
 
-// 0. AI Configuration
-const API_KEY = "AIzaSyBYph46fnUM-USuhDAcblYWBpr4C2IZ2Gg"; 
-const genAI = new GoogleGenerativeAI(API_KEY);
+// 0. AI Configuration (Using Environment Variable)
+// Note: In a local dev environment like IDX, we use the injected API key.
+const API_KEY = window.ENV_API_KEY || "YOUR_API_KEY_HERE"; 
+const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 // 1. Updated Data for Apartments (Based on Real Market Data 2026)
 const apartments = [
@@ -14,7 +15,7 @@ const apartments = [
         id: 1,
         name: "더샵 탕정인피니티시티 1차",
         location: "아산시 탕정면 (탕정지구 A4)",
-        price: 54000, // 분양가 4.8억 + P 4000 + 옵션/확장
+        price: 54000,
         score: { location: 95, education: 94, future: 96 },
         features: ["elementary", "academy", "kinder", "subway", "brand"],
         description: "탕정지구 대장주. 초품아 확정 및 유치원 인접. 탕정역 도보권.",
@@ -24,7 +25,7 @@ const apartments = [
         id: 2,
         name: "더샵 탕정인피니티시티 2차",
         location: "아산시 탕정면 (탕정지구 A3)",
-        price: 52000, // 분양가 4.8억 + P 3000 + 옵션
+        price: 52000,
         score: { location: 92, education: 90, future: 94 },
         features: ["elementary", "kinder", "subway", "brand"],
         description: "1차와 인프라 공유. 초등학교 및 중학교 신설 부지 인접.",
@@ -34,7 +35,7 @@ const apartments = [
         id: 3,
         name: "더샵 탕정인피니티시티 3차",
         location: "아산시 탕정면 (탕정지구 A2)",
-        price: 50000, // 분양가 + P 1000~2000
+        price: 50000,
         score: { location: 89, education: 86, future: 93 },
         features: ["kinder", "brand"],
         description: "지구 하단부 위치하나 1,2차와 함께 매머드급 브랜드 타운 형성.",
@@ -44,7 +45,7 @@ const apartments = [
         id: 4,
         name: "아산 탕정 자이 퍼스트시티",
         location: "아산시 탕정면 (동산리)",
-        price: 54000, // 분양가 5.2억 + P 2000
+        price: 54000,
         score: { location: 91, education: 88, future: 90 },
         features: ["elementary", "academy", "brand"],
         description: "신불당 생활권 공유. 자이 브랜드 파워 및 쾌적한 주거 환경.",
@@ -54,7 +55,7 @@ const apartments = [
         id: 5,
         name: "천안 아이파크 시티 (성성)",
         location: "천안시 서북구 성성동 (성성5지구)",
-        price: 61000, // 실거래 5.6억 + P 5000 (호수조망 등)
+        price: 61000,
         score: { location: 94, education: 92, future: 95 },
         features: ["elementary", "park", "brand"],
         description: "성성호수공원 영구 조망권 확보 가능 세대 존재. 초교 신설 호재.",
@@ -64,7 +65,7 @@ const apartments = [
         id: 6,
         name: "불당 지웰 더샵",
         location: "천안시 서북구 불당동",
-        price: 75000, // 불당 대장주 실거래가 반영
+        price: 75000,
         score: { location: 98, education: 99, future: 88 },
         features: ["elementary", "academy", "kinder", "subway"],
         description: "천안의 강남, 불당동 핵심 학원가 및 상권 최인접 대장주.",
@@ -207,14 +208,9 @@ function renderApartments() {
     `).join('');
 }
 
-// 6. Chatbot Logic
+// 6. Chatbot Logic (Using User's Specific @google/genai Syntax)
 async function getAIResponse(userMessage) {
-    if (API_KEY === "YOUR_API_KEY_HERE") {
-        return "⚠️ API 키가 설정되지 않았습니다. main.js 상단의 API_KEY 변수에 키를 입력해주세요. (Google AI Studio에서 발급 가능)";
-    }
-
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         const context = `
             당신은 천안/아산 지역 아파트 전문가입니다. 아래는 현재 추천 가능한 아파트 데이터입니다:
             ${JSON.stringify(apartments, null, 2)}
@@ -224,13 +220,15 @@ async function getAIResponse(userMessage) {
             답변은 한국어로, 친근한 전문가 톤으로 해주세요.
         `;
 
-        const prompt = `${context}\n\n사용자 질문: ${userMessage}`;
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        return response.text();
+        const response = await ai.models.generateContent({
+            model: "gemini-3.1-pro-preview",
+            contents: `${context}\n\n사용자 질문: ${userMessage}`
+        });
+
+        return response.text;
     } catch (error) {
         console.error("AI Error:", error);
-        return "죄송합니다. 답변을 생성하는 중에 오류가 발생했습니다.";
+        return "죄송합니다. 답변을 생성하는 중에 오류가 발생했습니다. (API 연동 방식을 확인해주세요)";
     }
 }
 
